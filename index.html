@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light grey background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            padding: 30px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2a52; /* Dark blue */
+            margin-bottom: 20px;
+        }
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .option-label {
+            display: flex;
+            align-items: center;
+            background-color: #ffffff; /* Changed to white */
+            padding: 15px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: 1px solid #00bec7; /* Light blue border */
+        }
+        .option-label:hover:not(.disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+        .option-label.selected {
+            background-color: #abb5bf; /* Medium grey */
+            border-color: #abb5bf;
+            color: #ffffff;
+        }
+        .option-label input[type="radio"],
+        .option-label input[type="checkbox"] {
+            display: none; /* Hide default radio/checkbox */
+        }
+        .custom-radio, .custom-checkbox {
+            min-width: 24px;
+            min-height: 24px;
+            border-radius: 50%;
+            border: 2px solid #1f2a52; /* Dark blue */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 15px;
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-checkbox {
+            border-radius: 4px;
+        }
+        .option-label.selected .custom-radio,
+        .option-label.selected .custom-checkbox {
+            background-color: #e72582; /* Pink */
+            border-color: #e72582;
+        }
+        .custom-radio::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .option-label.selected .custom-radio::after {
+            opacity: 1;
+        }
+        .custom-checkbox i {
+            color: #ffffff;
+            font-size: 16px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .option-label.selected .custom-checkbox i {
+            opacity: 1;
+        }
+
+        /* Styles for correct/incorrect feedback after checking */
+        .option-label.correct-feedback {
+            background-color: #00bec7; /* Light blue/cyan */
+            border-color: #00bec7;
+            color: #ffffff;
+        }
+        .option-label.incorrect-feedback {
+            background-color: #e72582; /* Pink */
+            border-color: #e72582;
+            color: #ffffff;
+        }
+        .option-label.correct-feedback .option-text,
+        .option-label.incorrect-feedback .option-text {
+            color: #ffffff;
+        }
+
+
+        .option-text {
+            flex-grow: 1;
+            color: #2e4d6b; /* Dark grey-blue */
+        }
+        .option-label.selected .option-text {
+            color: #ffffff;
+        }
+
+        .feedback-icon {
+            margin-left: 15px;
+            font-size: 1.2rem;
+        }
+        .feedback-icon.correct {
+            color: #ffffff;
+        }
+        .feedback-icon.incorrect {
+            color: #ffffff;
+        }
+
+        .actions-container {
+            display: flex;
+            flex-direction: column; /* Changed to column for feedback placement */
+            align-items: center; /* Center items in column */
+            gap: 15px; /* Adjust gap */
+            margin-top: 20px;
+        }
+        .buttons-row {
+            display: flex;
+            justify-content: space-between;
+            width: 100%; /* Ensure buttons span full width */
+        }
+        .btn {
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #e72582; /* Pink */
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #d21f75; /* Darker pink */
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #abb5bf; /* Medium grey */
+            color: #ffffff;
+        }
+        .btn-secondary:hover {
+            background-color: #9da7b3; /* Darker medium grey */
+            transform: translateY(-1px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .feedback-message {
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #1f2a52; /* Dark blue */
+        }
+        .quiz-complete-message {
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1f2a52;
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #d2f0f0;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="quiz-container">
+        <div id="question-container">
+            <!-- Question will be loaded here by JavaScript -->
+        </div>
+
+        <div class="actions-container">
+            <div id="feedback-message" class="feedback-message hidden"></div> <!-- Moved feedback message here -->
+            <div class="buttons-row">
+                <button id="check-btn" class="btn btn-primary" disabled>Check Response</button>
+                <button id="reset-btn" class="btn btn-secondary" disabled>Reset</button>
+                <button id="next-btn" class="btn btn-primary" disabled>Next Question</sutton>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "Question 1: You've received a customer's angry email. How can a general-purpose AI tool most practically assist you in responding?",
+                type: "single",
+                options: [
+                    { text: "Automatically send a pre-written apology without review.", correct: false },
+                    { text: "Draft a calm, professional response for your review.", correct: true },
+                    { text: "Identify the customer's personal contact details.", correct: false },
+                    { text: "Schedule an immediate face-to-face meeting.", correct: false }
+                ]
+            },
+            {
+                question: "Question 2: To create a blog post, which practical applications of a general-purpose AI tool could you utilise? (Select all that apply)",
+                type: "multiple",
+                options: [
+                    { text: "Generating initial draft paragraphs.", correct: true },
+                    { text: "Brainstorming catchy titles and headings.", correct: true },
+                    { text: "Summarising relevant research information.", correct: true },
+                    { text: "Creating high-resolution custom images.", correct: false },
+                    { text: "Converting spoken interviews into text.", correct: false }
+                ]
+            },
+            {
+                question: "Question 3: When using a general-purpose AI tool to craft longer documents, what is a key consideration for achieving better results?",
+                type: "single",
+                options: [
+                    { text: "Providing minimal context to allow the AI full creativity.", correct: false },
+                    { text: "Attempting to generate the entire document with a single, comprehensive prompt.", correct: false },
+                    { text: "Engaging in sequential prompting and iterative refinement of content.", correct: true },
+                    { text: "Relying solely on the AI for factual accuracy without any human verification.", correct: false }
+                ]
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        const questionContainer = document.getElementById('question-container');
+        const checkBtn = document.getElementById('check-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const feedbackMessage = document.getElementById('feedback-message');
+
+        /**
+         * Loads and displays the current question from the questions array.
+         * Renders options as radio buttons for single-choice and checkboxes for multiple-choice.
+         */
+        function loadQuestion() {
+            const currentQuestion = questions[currentQuestionIndex];
+            questionContainer.innerHTML = `
+                <div class="question-text">${currentQuestion.question}</div>
+                <div class="options-container" id="options-list">
+                    ${currentQuestion.options.map((option, index) => `
+                        <label class="option-label" data-index="${index}">
+                            <input type="${currentQuestion.type === 'single' ? 'radio' : 'checkbox'}"
+                                name="option" value="${index}" ${currentQuestion.type === 'single' ? '' : `id="option-${index}"`}>
+                            <div class="${currentQuestion.type === 'single' ? 'custom-radio' : 'custom-checkbox'}">
+                                ${currentQuestion.type === 'multiple' ? '<i class="fas fa-check"></i>' : ''}
+                            </div>
+                            <span class="option-text">${option.text}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            `;
+
+            // Add event listeners to labels for custom styling
+            document.querySelectorAll('.option-label').forEach(label => {
+                label.addEventListener('click', (event) => {
+                    // Prevent immediate default action to allow custom handling
+                    event.preventDefault();
+
+                    // Only allow interaction if not in a disabled state (after correct answer)
+                    if (label.classList.contains('disabled')) return;
+
+                    const input = label.querySelector('input');
+                    const currentQuestion = questions[currentQuestionIndex];
+
+                    if (currentQuestion.type === 'single') {
+                        // Deselect all other radio options visually and internally
+                        document.querySelectorAll('.option-label').forEach(otherLabel => {
+                            otherLabel.classList.remove('selected', 'correct-feedback', 'incorrect-feedback');
+                            otherLabel.querySelector('input').checked = false; // Explicitly uncheck others
+                        });
+                        label.classList.add('selected');
+                        input.checked = true; // Explicitly check this one
+                    } else { // multiple (checkboxes)
+                        input.checked = !input.checked; // Toggle the actual checkbox state first
+                        if (input.checked) {
+                            label.classList.add('selected');
+                        } else {
+                            label.classList.remove('selected');
+                        }
+                        // For multiple, remove feedback classes on re-selection (if any were there from a previous check)
+                        label.classList.remove('correct-feedback', 'incorrect-feedback');
+                    }
+                    // Enable check button if any option is selected
+                    const anyOptionSelected = Array.from(document.querySelectorAll('.option-label input:checked')).length > 0;
+                    checkBtn.disabled = !anyOptionSelected;
+                });
+            });
+
+            checkBtn.disabled = true;
+            resetBtn.disabled = true;
+            nextBtn.disabled = true;
+            feedbackMessage.textContent = '';
+            feedbackMessage.classList.add('hidden');
+        }
+
+        /**
+         * Checks the user's selected answers against the correct answers.
+         * Provides feedback (Correct/Incorrect) and updates styling.
+         * Disables options after checking if the answer is correct.
+         */
+        function checkResponse() {
+            const currentQuestion = questions[currentQuestionIndex];
+            const selectedOptionsInputs = Array.from(document.querySelectorAll('.option-label input:checked'));
+            const selectedIndices = selectedOptionsInputs.map(input => parseInt(input.value));
+            let isCorrect = true;
+
+            // Clear previous feedback styling
+            document.querySelectorAll('.option-label').forEach(label => {
+                label.classList.remove('correct-feedback', 'incorrect-feedback');
+            });
+
+            if (currentQuestion.type === 'single') {
+                const selectedIndex = selectedIndices[0]; // There will only be one for single choice
+
+                currentQuestion.options.forEach((option, index) => {
+                    const label = document.querySelector(`.option-label[data-index="${index}"]`);
+                    if (option.correct) {
+                        label.classList.add('correct-feedback'); // Highlight correct answer
+                        if (selectedIndex !== index) {
+                            isCorrect = false;
+                        }
+                    } else if (selectedIndex === index) { // Incorrectly selected
+                        label.classList.add('incorrect-feedback');
+                        isCorrect = false;
+                    }
+                });
+
+            } else { // multiple
+                // Check if all correct options are selected and no incorrect ones are selected
+                currentQuestion.options.forEach((option, index) => {
+                    const label = document.querySelector(`.option-label[data-index="${index}"]`);
+                    const isSelected = selectedIndices.includes(index);
+
+                    if (option.correct) {
+                        if (isSelected) {
+                            label.classList.add('correct-feedback');
+                        } else {
+                            // If a correct option is not selected, the answer is incorrect overall
+                            label.classList.add('correct-feedback'); // Still highlight it as correct
+                            isCorrect = false;
+                        }
+                    } else { // This is an incorrect option
+                        if (isSelected) {
+                            label.classList.add('incorrect-feedback'); // If an incorrect option is selected
+                            isCorrect = false;
+                        }
+                    }
+                });
+            }
+
+            if (isCorrect) {
+                feedbackMessage.textContent = "Correct! Well done.";
+                feedbackMessage.classList.remove('hidden');
+                // Disable all options once the correct answer is given
+                document.querySelectorAll('.option-label').forEach(label => {
+                    label.classList.add('disabled');
+                });
+                nextBtn.disabled = false; // Enable next button only on correct answer
+                resetBtn.disabled = true; // Disable reset on correct answer
+            } else {
+                feedbackMessage.textContent = "Incorrect, try again.";
+                feedbackMessage.classList.remove('hidden');
+                resetBtn.disabled = false; // Enable reset button on incorrect answer
+                nextBtn.disabled = true; // Keep next disabled
+            }
+            checkBtn.disabled = true; // Disable check button after checking
+        }
+
+        /**
+         * Resets the current question, clearing selections and feedback.
+         */
+        function resetQuestion() {
+            loadQuestion(); // Reloads the question to reset all states
+        }
+
+        /**
+         * Advances to the next question or finishes the quiz.
+         */
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                // Quiz complete feedback
+                questionContainer.innerHTML = `
+                    <div class="quiz-complete-message">
+                        Congratulations! You've completed the quiz.<br>
+                        You can now move onto the next module.
+                    </div>
+                `;
+                checkBtn.style.display = 'none';
+                resetBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                feedbackMessage.textContent = '';
+                feedbackMessage.classList.add('hidden');
+            }
+        }
+
+        // Event Listeners for buttons
+        checkBtn.addEventListener('click', checkResponse);
+        resetBtn.addEventListener('click', resetQuestion);
+        nextBtn.addEventListener('click', nextQuestion);
+
+        // Initial load
+        window.onload = loadQuestion;
+    </script>
+</body>
+</html>
